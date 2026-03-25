@@ -16,7 +16,7 @@ public interface AnswerRepository extends JpaRepository<Answer, String> {
 
     @Query(value = "SELECT a FROM Answer a JOIN FETCH a.author WHERE a.doubt.id = :doubtId ORDER BY a.accepted DESC, a.createdAt ASC",
            countQuery = "SELECT COUNT(a) FROM Answer a WHERE a.doubt.id = :doubtId")
-    Page<Answer> findByDoubtIdOrderByAcceptedDescCreatedAtAsc(@Param("doubtId") String doubtId, Pageable pageable);
+        Page<Answer> findByDoubtIdOrderByAcceptedDescCreatedAtAsc(@Param("doubtId") String doubtId, Pageable pageable);
 
     List<Answer> findByDoubtId(String doubtId);
 
@@ -29,6 +29,5 @@ public interface AnswerRepository extends JpaRepository<Answer, String> {
     @Query("SELECT COUNT(a) FROM Answer a WHERE a.createdAt >= :since")
     long countAnswersSince(LocalDateTime since);
 
-    @Query("SELECT AVG(TIMESTAMPDIFF(MINUTE, d.createdAt, a.createdAt)) FROM Answer a JOIN a.doubt d WHERE a.createdAt >= :since")
-    Double avgResponseTimeMinutesSince(LocalDateTime since);
+    List<Answer> findByCreatedAtGreaterThanEqual(LocalDateTime since);
 }

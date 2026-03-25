@@ -19,8 +19,9 @@ export default function Tags() {
           ? await tagsApi.search(search)
           : await tagsApi.getAll();
         setTags(data || []);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('Failed to load tags', err);
+        setTags([]);
       } finally {
         setLoading(false);
       }

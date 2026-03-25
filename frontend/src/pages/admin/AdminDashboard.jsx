@@ -16,8 +16,8 @@ export default function AdminDashboard() {
       try {
         const { data } = await adminApi.getAnalytics();
         setAnalytics(data);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('Failed to load admin analytics', err);
       } finally {
         setLoading(false);
       }
@@ -97,8 +97,8 @@ export default function AdminDashboard() {
                     dataKey="value"
                     label={({ name }) => name}
                   >
-                    {tagChartData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    {tagChartData.map((item, index) => (
+                      <Cell key={`${item.name}-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#f1f5f9' }} />

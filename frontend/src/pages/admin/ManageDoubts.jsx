@@ -25,8 +25,11 @@ export default function ManageDoubts() {
       const { data } = await adminApi.getDoubts(page, 20);
       setDoubts(data.content || []);
       setTotalPages(data.totalPages || 0);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Failed to load doubts', err);
+      setDoubts([]);
+      setTotalPages(0);
+      toast.error('Failed to load doubts');
     } finally {
       setLoading(false);
     }
@@ -38,7 +41,8 @@ export default function ManageDoubts() {
       await adminApi.deleteDoubt(doubtId);
       toast.success('Doubt deleted');
       loadDoubts();
-    } catch {
+    } catch (err) {
+      console.error('Failed to delete doubt', err);
       toast.error('Failed to delete');
     }
   };

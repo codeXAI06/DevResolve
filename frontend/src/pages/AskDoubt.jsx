@@ -35,7 +35,12 @@ export default function AskDoubt() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (tagInput.length >= 2) {
-        tagsApi.search(tagInput).then(res => setTagSuggestions(res.data || [])).catch(() => {});
+        tagsApi.search(tagInput)
+          .then((res) => setTagSuggestions(Array.isArray(res.data) ? res.data : []))
+          .catch((err) => {
+            console.warn('Failed to fetch tag suggestions', err);
+            setTagSuggestions([]);
+          });
       } else {
         setTagSuggestions([]);
       }
@@ -48,8 +53,9 @@ export default function AskDoubt() {
     try {
       const { data } = await doubtsApi.findSimilar(form.title);
       setSimilarDoubts(data || []);
-    } catch {
-      // Ignore
+    } catch (err) {
+      console.warn('Failed to check similar doubts', err);
+      setSimilarDoubts([]);
     } finally {
       setCheckingSimilar(false);
     }

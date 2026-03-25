@@ -19,8 +19,9 @@ export default function Rewards() {
       try {
         const { data } = await rewardsApi.getAvailable();
         setRewards(data || []);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('Failed to load rewards', err);
+        setRewards([]);
       } finally {
         setLoading(false);
       }

@@ -3,6 +3,7 @@ package com.example.backend.scheduler;
 import com.example.backend.model.Doubt;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
+import com.example.backend.dto.CreateAnswerRequest;
 import com.example.backend.repository.DoubtRepository;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.AnswerService;
@@ -79,8 +80,16 @@ public class AiFallbackScheduler {
                         %s
                         """.formatted(aiAnswer);
 
-                answerService.createAiAnswer(doubt.getId(), formattedAnswer, aiUser);
+                CreateAnswerRequest request = CreateAnswerRequest.builder()
+                        .content(formattedAnswer)
+                        .build();
+
+                answerService.createAnswer(doubt.getId(), request, aiUser.getUsername());
                 log.info("AI fallback answer generated for doubt: {}", doubt.getId());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("AI scheduler interrupted, stopping batch processing", e);
+                break;
             } catch (Exception e) {
                 log.error("Failed to generate AI answer for doubt: {}", doubt.getId(), e);
             }

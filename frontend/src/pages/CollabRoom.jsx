@@ -20,6 +20,9 @@ const FILE_EXTENSIONS = {
 };
 
 export default function CollabRoom() {
+  const MAX_WS_RETRIES = 3;
+  const BASE_RETRY_DELAY_MS = 1000;
+
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, token } = useAuthStore();
@@ -31,36 +34,47 @@ export default function CollabRoom() {
   const [deleting, setDeleting] = useState(false);
   const clientRef = useRef(null);
   const localChange = useRef(false);
+  const retryCountRef = useRef(0);
+  const retryTimeoutRef = useRef(null);
 
-  useEffect(() => {
-    loadRoom();
-    return () => {
-      if (clientRef.current) clientRef.current.deactivate();
-    };
-  }, [id]);
-
-  const loadRoom = async () => {
-    try {
-      const { data } = await collabApi.getRoom(id);
-      setRoom(data);
-      setCode(data.codeContent || '');
-      connectWs(data.id);
-      // Auto-join as participant
-      if (token) {
-        collabApi.joinRoom(data.id).catch(() => {});
-      }
-    } catch {
-      toast.error('Room not found');
-    } finally {
-      setLoading(false);
+  const clearRetryTimeout = () => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
     }
   };
 
-  const connectWs = (roomId) => {
+  const connectWs = useCallback((roomId) => {
+    const scheduleReconnect = () => {
+      if (retryCountRef.current >= MAX_WS_RETRIES) {
+        toast.error('Realtime connection lost. Please refresh to reconnect.');
+        return;
+      }
+
+      const nextRetry = retryCountRef.current + 1;
+      retryCountRef.current = nextRetry;
+      const delay = BASE_RETRY_DELAY_MS * (2 ** (nextRetry - 1));
+
+      clearRetryTimeout();
+      retryTimeoutRef.current = setTimeout(() => {
+        connectWs(roomId);
+      }, delay);
+    };
+
+    try {
+      if (clientRef.current) {
+        clientRef.current.deactivate();
+      }
+    } catch (err) {
+      console.warn('Failed to deactivate previous websocket client', err);
+    }
+
     const client = new Client({
       webSocketFactory: () => new SockJS('/ws'),
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
       onConnect: () => {
+        retryCountRef.current = 0;
+        clearRetryTimeout();
         client.subscribe(`/topic/collab/${roomId}`, (msg) => {
           const data = JSON.parse(msg.body);
           if (data.username !== user?.username) {
@@ -69,11 +83,46 @@ export default function CollabRoom() {
           }
         });
       },
-      onStompError: () => toast.error('WebSocket connection failed'),
+      onStompError: (frame) => {
+        console.error('WebSocket STOMP error', frame);
+        scheduleReconnect();
+      },
+      onWebSocketClose: () => {
+        scheduleReconnect();
+      },
     });
+
     client.activate();
     clientRef.current = client;
-  };
+  }, [token, user?.username]);
+
+  const loadRoom = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await collabApi.getRoom(id);
+      setRoom(data);
+      setCode(data.codeContent || '');
+      connectWs(data.id);
+      if (token) {
+        collabApi.joinRoom(data.id).catch((err) => {
+          console.warn('Failed to join room', err);
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load room', err);
+      toast.error('Room not found');
+    } finally {
+      setLoading(false);
+    }
+  }, [connectWs, id, token]);
+
+  useEffect(() => {
+    loadRoom();
+    return () => {
+      clearRetryTimeout();
+      if (clientRef.current) clientRef.current.deactivate();
+    };
+  }, [loadRoom]);
 
   const handleCodeChange = (value) => {
     if (localChange.current) {

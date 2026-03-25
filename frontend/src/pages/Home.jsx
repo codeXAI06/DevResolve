@@ -24,7 +24,14 @@ export default function Home() {
   }, [page, filter, searchQuery]);
 
   useEffect(() => {
-    tagsApi.getTrending(8).then(res => setTrendingTags(res.data)).catch(() => {});
+    tagsApi.getTrending(8)
+      .then((res) => {
+        setTrendingTags(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch((err) => {
+        console.warn('Failed to load trending tags', err);
+        setTrendingTags([]);
+      });
   }, []);
 
   const loadDoubts = async () => {
@@ -43,7 +50,9 @@ export default function Home() {
       setDoubts(res.data.content || []);
       setTotalPages(res.data.totalPages || 0);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load doubts', err);
+      setDoubts([]);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }

@@ -2,8 +2,8 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.AdminAnalyticsResponse;
 import com.example.backend.dto.DoubtResponse;
-import com.example.backend.dto.TagUsageDto;
 import com.example.backend.dto.UserProfileResponse;
+import com.example.backend.model.Answer;
 import com.example.backend.repository.AnswerRepository;
 import com.example.backend.repository.DoubtRepository;
 import com.example.backend.repository.UserRepository;
@@ -17,6 +17,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -70,6 +72,19 @@ public class AdminController {
     @GetMapping("/analytics")
     public ResponseEntity<AdminAnalyticsResponse> getAnalytics() {
         LocalDateTime today = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime analyticsSince = today.minusDays(30);
+
+        List<Answer> recentAnswers = answerRepository.findByCreatedAtGreaterThanEqual(analyticsSince);
+        double avgResponseTimeMinutes = recentAnswers.stream()
+            .filter(answer -> answer.getCreatedAt() != null
+                && answer.getDoubt() != null
+                && answer.getDoubt().getCreatedAt() != null)
+            .mapToLong(answer -> {
+                long minutes = ChronoUnit.MINUTES.between(answer.getDoubt().getCreatedAt(), answer.getCreatedAt());
+                return Math.max(minutes, 0);
+            })
+            .average()
+            .orElse(0.0);
 
         AdminAnalyticsResponse analytics = AdminAnalyticsResponse.builder()
                 .totalUsers(userRepository.count())
@@ -77,7 +92,7 @@ public class AdminController {
                 .totalAnswers(answerRepository.count())
                 .newUsersToday(userRepository.countNewUsersSince(today))
                 .newDoubtsToday(doubtRepository.countDoubtsSince(today))
-                .avgResponseTimeMinutes(answerRepository.avgResponseTimeMinutesSince(today.minusDays(30)))
+            .avgResponseTimeMinutes(avgResponseTimeMinutes)
                 .topTags(tagService.getTrendingTags(10))
                 .build();
 

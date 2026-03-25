@@ -42,9 +42,15 @@ export default function DoubtDetail() {
   const loadAnswers = async () => {
     try {
       const { data } = await answersApi.getByDoubt(id);
-      setAnswers(data.content || data || []);
-    } catch {
-      console.error('Failed to load answers');
+      const normalizedAnswers = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.content)
+          ? data.content
+          : [];
+      setAnswers(normalizedAnswers);
+    } catch (err) {
+      console.error('Failed to load answers', err);
+      setAnswers([]);
     }
   };
 

@@ -26,8 +26,11 @@ export default function ManageUsers() {
       const { data } = await adminApi.getUsers(page, 20);
       setUsers(data.content || []);
       setTotalPages(data.totalPages || 0);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Failed to load users', err);
+      setUsers([]);
+      setTotalPages(0);
+      toast.error('Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -38,7 +41,8 @@ export default function ManageUsers() {
       await adminApi.banUser(userId);
       toast.success('User banned');
       loadUsers();
-    } catch {
+    } catch (err) {
+      console.error('Failed to ban user', err);
       toast.error('Failed to ban user');
     }
   };
@@ -48,7 +52,8 @@ export default function ManageUsers() {
       await adminApi.unbanUser(userId);
       toast.success('User unbanned');
       loadUsers();
-    } catch {
+    } catch (err) {
+      console.error('Failed to unban user', err);
       toast.error('Failed to unban user');
     }
   };

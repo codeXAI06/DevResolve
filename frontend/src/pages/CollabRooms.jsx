@@ -37,8 +37,9 @@ export default function CollabRooms() {
     try {
       const { data } = await collabApi.getMyRooms();
       setMyRooms(data || []);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Failed to load collaboration rooms', err);
+      setMyRooms([]);
     } finally {
       setLoadingRooms(false);
     }

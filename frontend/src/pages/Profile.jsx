@@ -18,8 +18,9 @@ export default function Profile() {
       try {
         const { data } = await usersApi.getProfile(username);
         setProfile(data);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('Failed to load profile', err);
+        setProfile(null);
       } finally {
         setLoading(false);
       }

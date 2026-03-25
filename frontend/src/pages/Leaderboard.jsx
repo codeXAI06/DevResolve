@@ -21,8 +21,10 @@ export default function Leaderboard() {
         const { data } = await usersApi.getTop(page, 20);
         setUsers(data.content || []);
         setTotalPages(data.totalPages || 0);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('Failed to load leaderboard', err);
+        setUsers([]);
+        setTotalPages(0);
       } finally {
         setLoading(false);
       }

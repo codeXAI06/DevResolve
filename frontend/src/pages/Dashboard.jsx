@@ -17,20 +17,27 @@ export default function Dashboard() {
 
   useEffect(() => {
     const load = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const [profRes, doubtsRes] = await Promise.all([
-          usersApi.getDashboard(user.id),
-          doubtsApi.getByUser(user.id, 0, 5),
+          usersApi.getDashboard(user?.id),
+          doubtsApi.getByUser(user?.id, 0, 5),
         ]);
         setProfile(profRes.data);
         setMyDoubts(doubtsRes.data.content || []);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load dashboard', err);
+        setProfile(null);
+        setMyDoubts([]);
       } finally {
         setLoading(false);
       }
     };
-    if (user?.id) load();
+    load();
   }, [user]);
 
   if (loading) return <PageLayout><Spinner className="py-20" /></PageLayout>;

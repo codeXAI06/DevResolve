@@ -21,10 +21,10 @@ public class GeminiService {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
-    @Value("${GEMINI_API_KEY}")
+    @Value("${app.gemini.api-key}")
     private String apiKey;
 
-    @Value("${GEMINI_API_URL}")
+    @Value("${app.gemini.api-url}")
     private String apiUrl;
 
     public GeminiService(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
